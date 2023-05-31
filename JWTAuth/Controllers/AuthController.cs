@@ -12,11 +12,11 @@ namespace JWTAuth.Controllers
     [ApiController]
     public class AuthController : ControllerBase
     {
-        public readonly IAuthService authService;
+        private readonly IAuthService _authService;
         
-        public AuthController(IAuthService AuthService)
+        public AuthController(IAuthService authService)
         {
-            authService = AuthService;
+            _authService = authService;
         }
 
         // POST: auth/login
@@ -33,7 +33,7 @@ namespace JWTAuth.Controllers
                 return BadRequest(new { message = "Password needs to entered" });
             }
 
-            User loggedInUser = await authService.Login(user.UserName, user.Password);
+            User loggedInUser = await _authService.Login(user.UserName, user.Password);
 
             if (loggedInUser != null)
             {
@@ -63,9 +63,9 @@ namespace JWTAuth.Controllers
 
             User userToRegister = new(user.UserName, user.Name, user.Password, user.Role);
 
-            User registeredUser = await authService.Register(userToRegister);
+            User registeredUser = await _authService.Register(userToRegister);
 
-            User loggedInUser = await authService.Login(registeredUser.UserName, user.Password);
+            User loggedInUser = await _authService.Login(registeredUser.UserName, user.Password);
 
             if (loggedInUser != null)
             {

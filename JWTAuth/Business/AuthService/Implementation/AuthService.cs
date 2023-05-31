@@ -11,17 +11,17 @@ namespace JWTAuth.Business.AuthService.Implementation
 
     public class AuthService : IAuthService
     {
-        public readonly ApplicationDbContext dbContext;
-        public readonly IConfiguration configuration;
-        public AuthService(ApplicationDbContext DbContext, IConfiguration Configuration)
+        private readonly ApplicationDbContext _dbContext;
+        private readonly IConfiguration _configuration;
+        public AuthService(ApplicationDbContext dbContext, IConfiguration configuration)
         {
-            dbContext = DbContext;
-            configuration = Configuration;
+            _dbContext = dbContext;
+            _configuration = configuration;
         }
 
         public async Task<User> Login(string email, string password)
         {
-            User? user = await dbContext.Users.FindAsync(email);
+            User? user = await _dbContext.Users.FindAsync(email);
 
             if (user == null || BCrypt.Verify(password, user.Password) == false)
             {
@@ -29,7 +29,7 @@ namespace JWTAuth.Business.AuthService.Implementation
             }
 
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(configuration["JWT:SecretKey"]);
+            var key = Encoding.ASCII.GetBytes(_configuration["JWT:SecretKey"]);
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -40,6 +40,8 @@ namespace JWTAuth.Business.AuthService.Implementation
                     new Claim(ClaimTypes.Role, user.Role)
                 }),
                 IssuedAt = DateTime.UtcNow,
+                Issuer = _configuration["JWT:Issuer"],
+                Audience = _configuration["JWT:Audience"],
                 Expires = DateTime.UtcNow.AddMinutes(30),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
             };
@@ -54,8 +56,8 @@ namespace JWTAuth.Business.AuthService.Implementation
         public async Task<User> Register(User user)
         {
             user.Password = BCrypt.HashPassword(user.Password);
-            dbContext.Users.Add(user);
-            await dbContext.SaveChangesAsync();
+            _dbContext.Users.Add(user);
+            await _dbContext.SaveChangesAsync();
             
             return user;
         }
